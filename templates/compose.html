@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Compose Message - Secure Messaging System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0">
+            <div class="card-header bg-dark">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit text-primary me-2"></i>
+                    Compose New Message
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Security Notice -->
+                <div class="alert alert-info mb-4" role="alert">
+                    <div class="d-flex">
+                        <div class="me-3">
+                            <i class="fas fa-shield-alt fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="alert-heading mb-1">End-to-End Encryption Active</h6>
+                            <small class="mb-0">
+                                Your message will be encrypted with the recipient's public key. 
+                                Only they can decrypt and read it.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-4">
+                        {{ form.recipient.label(class="form-label") }}
+                        {{ form.recipient(class="form-select form-select-lg" + (" is-invalid" if form.recipient.errors else "")) }}
+                        {% if form.recipient.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.recipient.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Only verified users can receive messages
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.message.label(class="form-label") }}
+                        {{ form.message(class="form-control" + (" is-invalid" if form.message.errors else ""), 
+                                       rows="8", 
+                                       placeholder="Type your secure message here...") }}
+                        {% if form.message.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.message.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text d-flex justify-content-between">
+                            <span>
+                                <i class="fas fa-lock me-1"></i>
+                                Message will be encrypted before sending
+                            </span>
+                            <span id="charCount">0 / 5000 characters</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('messages') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-paper-plane me-2"></i>Send Encrypted Message
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Encryption Process Info -->
+                <div class="mt-5">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-cogs me-2"></i>Encryption Process
+                    </h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center p-3 bg-dark rounded">
+                                <i class="fas fa-key text-warning fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">1. Key Generation</h6>
+                                    <small class="text-muted">Fernet key created</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center p-3 bg-dark rounded">
+                                <i class="fas fa-lock text-primary fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">2. Message Encryption</h6>
+                                    <small class="text-muted">Content encrypted</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center p-3 bg-dark rounded">
+                                <i class="fas fa-certificate text-success fa-2x me-3"></i>
+                                <div>
+                                    <h6 class="mb-1">3. Key Exchange</h6>
+                                    <small class="text-muted">RSA key protection</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageField = document.getElementById('message');
+    const charCount = document.getElementById('charCount');
+    
+    function updateCharCount() {
+        const currentLength = messageField.value.length;
+        charCount.textContent = currentLength + ' / 5000 characters';
+        
+        if (currentLength > 4500) {
+            charCount.classList.add('text-warning');
+        } else if (currentLength > 4800) {
+            charCount.classList.remove('text-warning');
+            charCount.classList.add('text-danger');
+        } else {
+            charCount.classList.remove('text-warning', 'text-danger');
+        }
+    }
+    
+    messageField.addEventListener('input', updateCharCount);
+    updateCharCount(); // Initial count
+});
+</script>
+{% endblock %}

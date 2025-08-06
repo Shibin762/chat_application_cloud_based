@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - Secure Messaging System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-envelope text-primary me-2"></i>
+                Messages
+            </h2>
+            <a href="{{ url_for('compose') }}" class="btn btn-primary">
+                <i class="fas fa-edit me-2"></i>New Message
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs" id="messagesTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="inbox-tab" data-bs-toggle="tab" data-bs-target="#inbox" type="button" role="tab">
+            <i class="fas fa-inbox me-2"></i>Inbox
+            {% if inbox|selectattr('is_read', 'equalto', false)|list|length > 0 %}
+                <span class="badge bg-primary ms-1">
+                    {{ inbox|selectattr('is_read', 'equalto', false)|list|length }}
+                </span>
+            {% endif %}
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent" type="button" role="tab">
+            <i class="fas fa-paper-plane me-2"></i>Sent
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content mt-4" id="messagesTabContent">
+    <!-- Inbox Tab -->
+    <div class="tab-pane fade show active" id="inbox" role="tabpanel">
+        <div class="card border-0">
+            <div class="card-body">
+                {% if inbox %}
+                    {% for message in inbox %}
+                    <div class="message-item mb-4 p-3 border rounded {{ 'bg-dark' if not message.is_read else 'bg-secondary bg-opacity-25' }}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ message.sender.username }}</h6>
+                                    <small class="text-muted">{{ message.sender.email }}</small>
+                                    {% if not message.is_read %}
+                                        <span class="badge bg-primary ms-2">New</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                                <div class="mt-1">
+                                    <i class="fas fa-lock text-success me-1" title="End-to-end encrypted"></i>
+                                    {% if not message.is_read %}
+                                        <a href="{{ url_for('mark_read', message_id=message.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="Mark as read">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-content">
+                            <p class="mb-2">{{ message.content }}</p>
+                            
+                            <!-- Toggle for encrypted view -->
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-info" type="button" 
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#encrypted-{{ message.id }}" 
+                                        aria-expanded="false">
+                                    <i class="fas fa-eye me-1"></i>View Encrypted Data
+                                </button>
+                            </div>
+                            
+                            <div class="collapse mt-3" id="encrypted-{{ message.id }}">
+                                <div class="card card-body bg-dark border-secondary">
+                                    <h6 class="text-warning">
+                                        <i class="fas fa-lock me-2"></i>Encrypted Message Data
+                                    </h6>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Encrypted Content:</small>
+                                        <div class="bg-secondary p-2 rounded mt-1">
+                                            <code class="text-light" style="font-size: 0.75rem; word-break: break-all;">
+                                                {{ message.encrypted_content[:100] }}...
+                                            </code>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">Encrypted Key (RSA):</small>
+                                        <div class="bg-secondary p-2 rounded mt-1">
+                                            <code class="text-light" style="font-size: 0.75rem; word-break: break-all;">
+                                                {{ message.encrypted_key[:100] }}...
+                                            </code>
+                                        </div>
+                                    </div>
+                                    <small class="text-info mt-2">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        This is how the message looks when encrypted. Only you can decrypt it with your private key.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Your inbox is empty</h5>
+                        <p class="text-muted">No messages received yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sent Tab -->
+    <div class="tab-pane fade" id="sent" role="tabpanel">
+        <div class="card border-0">
+            <div class="card-body">
+                {% if sent %}
+                    {% for message in sent %}
+                    <div class="message-item mb-4 p-3 border rounded bg-secondary bg-opacity-25">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">To: {{ message.recipient.username }}</h6>
+                                    <small class="text-muted">{{ message.recipient.email }}</small>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ message.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                </small>
+                                <div class="mt-1">
+                                    <i class="fas fa-lock text-success" title="End-to-end encrypted"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="message-content">
+                            <p class="mb-0 text-muted">
+                                <i class="fas fa-lock me-1"></i>
+                                [Encrypted message sent to {{ message.recipient.username }}]
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-paper-plane fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">No sent messages</h5>
+                        <p class="text-muted">You haven't sent any messages yet.</p>
+                        <a href="{{ url_for('compose') }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>Send Your First Message
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh for new messages
+setInterval(function() {
+    // Only refresh if on inbox tab and user is active
+    if (document.getElementById('inbox-tab').classList.contains('active')) {
+        // Could implement AJAX refresh here
+    }
+}, 30000); // 30 seconds
+</script>
+{% endblock %}
